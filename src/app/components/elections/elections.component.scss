@@ -1,0 +1,30 @@
+.wrapper {
+
+  text-align:center;
+
+  .item {
+    display: inline-block;
+    margin: 5px;
+    position: relative;
+
+    img{
+      width:110px;
+      height: auto;
+    }
+
+    .name{
+      border-top:1px solid black;
+      padding-top:5px;
+      margin:0;
+    }
+
+    app-score{
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 107.8px;
+      width:32px;
+    }
+  }
+
+}

@@ -1,0 +1,8 @@
+<div class="wrapper">
+  <div *ngFor="let result of results" class="item">
+    <img src="{{ result.imgUrl }}">
+    <app-score (increase)="moreMandates($event)" [result]="result" ></app-score>
+    <p class="name">{{result.name}}</p>
+  </div>
+</div>
+

@@ -1,0 +1,25 @@
+.wrapper{
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+
+  .bar{
+    position: absolute;
+    background-color: #4A90E2;
+    bottom: 0;
+    height: 50%;
+    width: 100%;
+  }
+
+  .num{
+    position: absolute;
+    bottom: 0;
+    color: white;
+    text-align: center;
+    width: 100%;
+  }
+
+}
