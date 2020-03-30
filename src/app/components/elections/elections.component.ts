@@ -1,4 +1,8 @@
-import {Component, OnInit} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {ApiService} from '../../services/api.service';
+import {fromEvent, Observable} from 'rxjs';
+import {environment} from '../../../environments/environment';
+import {map, mergeMap} from 'rxjs/operators';
 
 export interface PartyResult {
   imgUrl: string;
@@ -7,51 +11,78 @@ export interface PartyResult {
   full: number;
 }
 
-const RESULTS: PartyResult[] = [];
-
-RESULTS.push(
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990840-46.png', name: 'Yahadut Hatora', score: 7, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990839-46.png', name: 'Haavoda', score: 7, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990838-46.png', name: 'Israel Beiteynu', score: 7, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990847-46.png', name: 'Shaas', score: 10, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990837-46.png', name: 'Hameshutefet', score: 15, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990833-46.png', name: 'Kachol Lavan', score: 32, full: 36},
-  {imgUrl: 'https://img.wcdn.co.il/f_auto,w_200/2/9/9/0/2990832-46.png', name: 'BB', score: 36, full: 36}
-);
-
-RESULTS.sort((a, b) => {
-  return a.score > b.score ? 1 : a.score < b.score ? -1 : 0;
-});
-
 @Component({
   selector: 'app-elections',
   templateUrl: './elections.component.html',
   styleUrls: ['./elections.component.scss']
 })
-export class ElectionsComponent implements OnInit {
+export class ElectionsComponent implements OnInit, AfterViewInit {
 
-  constructor() {
+  @ViewChild('searchInput')
+  input: ElementRef;
+
+  results$: Observable<PartyResult[]>;
+  filteredResults$: Observable<PartyResult[]>;
+  images$: Observable<string[]>;
+  filterText$: Observable<string>;
+
+  constructor(private api: ApiService) {
   }
 
-  get results(): PartyResult[] {
-    return RESULTS;
-  }
+  // when using Promise
+  // get results(): PartyResult[] {
+  //   return this.resultsFromApi;
+  // }
 
   ngOnInit(): void {
+
+    // #2 to fetch the results
+    // this.results$ = this.api.fetchResults();
+
+
+    // this.api.fetchResults().then(json => {
+    //   this.resultsFromApi = json;
+    // });
   }
 
-  moreMandates(result: PartyResult) {
+  ngAfterViewInit(): void {
+
+    // #1 fetch the results with the generic api
+    this.results$ = this.api.load<PartyResult[]>(environment.electionsResultsUrl);
+    // this.subscription = this.results$.subscribe(data => console.log(data));
+
+    this.images$ = this.results$.pipe(map((partyResults: PartyResult[]) => {
+      return partyResults.map((partyResult: PartyResult) => partyResult.imgUrl);
+    }));
+
+    // this.filteredResults$ = this.results$.pipe(map((partyResults: PartyResult[]) => {
+    //   return partyResults.filter((partyResult: PartyResult) => partyResult.name.indexOf('s') > -1);
+    // }));
+
+    this.filterText$ = fromEvent<any>(this.input.nativeElement, 'keyup')
+      .pipe(map(e => {
+        return e.target.value;
+      }));
+
+    this.filterText$.subscribe(value => console.log(value));
+
+    this.filteredResults$ = this.filterText$.pipe(mergeMap(value => this.results$.pipe(map((partyResults: PartyResult[]) => {
+      const partyResults1 = partyResults.filter((partyResult: PartyResult) => partyResult.name.indexOf(value) > -1);
+      return partyResults1.length > 0 ? partyResults1 : partyResults;
+    }))));
+
+  }
+
+  moreMandates(results: PartyResult[], result: PartyResult) {
     result.score++;
-    let i = Math.floor(Math.random() * RESULTS.length);
-    while (i === RESULTS.indexOf(result)) {
-      i = Math.floor(Math.random() * RESULTS.length);
-    }
-    RESULTS[i].score--;
-    const full = RESULTS.reduce((accumulator: number, currentValue: PartyResult) => {
+    const full = results.reduce((accumulator: number, currentValue: PartyResult) => {
       return Math.max(accumulator, currentValue.score);
     }, 0);
 
-    RESULTS.forEach(x => x.full = full);
-
+    results.forEach(x => x.full = full);
   }
+
+  // ngOnDestroy(): void {
+  //   this.subscription.unsubscribe();
+  // }
 }

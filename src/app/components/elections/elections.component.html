@@ -1,8 +1,16 @@
-<div class="wrapper">
+<div>
+  <input #searchInput placeholder="enter chars to filter">
+</div>
+<div *ngIf="filteredResults$ | async as results; " class="wrapper">
   <div *ngFor="let result of results" class="item">
-    <img src="{{ result.imgUrl }}">
-    <app-score (increase)="moreMandates($event)" [result]="result" ></app-score>
-    <p class="name">{{result.name}}</p>
+      <img src="{{ result.imgUrl }}">
+      <app-score (increase)="moreMandates(results, $event)" [result]="result"></app-score>
+      <p class="name">{{result.name}}</p>
   </div>
 </div>
 
+<ul *ngIf="images$ | async as images">
+  <li *ngFor="let imgUrl of images">
+    <img src="{{imgUrl}}">
+  </li>
+</ul>
