@@ -1,8 +1,8 @@
 import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {ApiService} from '../../services/api.service';
-import {fromEvent, Observable} from 'rxjs';
+import {combineLatest, fromEvent, Observable} from 'rxjs';
 import {environment} from '../../../environments/environment';
-import {map, mergeMap} from 'rxjs/operators';
+import {debounceTime, map, startWith, tap} from 'rxjs/operators';
 
 export interface PartyResult {
   imgUrl: string;
@@ -49,6 +49,7 @@ export class ElectionsComponent implements OnInit, AfterViewInit {
 
     // #1 fetch the results with the generic api
     this.results$ = this.api.load<PartyResult[]>(environment.electionsResultsUrl);
+
     // this.subscription = this.results$.subscribe(data => console.log(data));
 
     this.images$ = this.results$.pipe(map((partyResults: PartyResult[]) => {
@@ -60,16 +61,24 @@ export class ElectionsComponent implements OnInit, AfterViewInit {
     // }));
 
     this.filterText$ = fromEvent<any>(this.input.nativeElement, 'keyup')
-      .pipe(map(e => {
-        return e.target.value;
-      }));
+      .pipe(
+        debounceTime(300),
+        startWith(''),
+        map((e: Event|string) => {
+          return typeof e === 'string' ? e :(e.target as HTMLInputElement).value;
+        })
+      );
 
-    this.filterText$.subscribe(value => console.log(value));
+    this.filteredResults$ = combineLatest([this.results$, this.filterText$]).pipe(
+      tap(a => console.log(a)),
+      map(data => data[0].filter(pr => pr.name.indexOf(data[1]) > -1))
+    );
 
-    this.filteredResults$ = this.filterText$.pipe(mergeMap(value => this.results$.pipe(map((partyResults: PartyResult[]) => {
-      const partyResults1 = partyResults.filter((partyResult: PartyResult) => partyResult.name.indexOf(value) > -1);
-      return partyResults1.length > 0 ? partyResults1 : partyResults;
-    }))));
+    // another option problematic in the sense that there's an order between the events
+    // this.filteredResults$ = this.filterText$.pipe(mergeMap(value => this.results$.pipe(map((partyResults: PartyResult[]) => {
+    //   const partyResults1 = partyResults.filter((partyResult: PartyResult) => partyResult.name.indexOf(value) > -1);
+    //   return partyResults1.length > 0 ? partyResults1 : partyResults;
+    // }))));
 
   }
 
